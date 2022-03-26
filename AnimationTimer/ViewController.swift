@@ -30,6 +30,12 @@ extension AnimationSampleView.Sample {
 
 final class ViewController: UIViewController {
     
+    private let mainThreadBlocker = Timer.NSTimer { tick in
+        if tick.index % 500 == 0 {
+            usleep(300000)
+        }
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -57,8 +63,12 @@ final class ViewController: UIViewController {
         stackView.bindEdgesToSuperView()
         
         let toggleView = MainThreadBlockerToggle(frame: .zero)
-        toggleView.toggle = { on in
-            print("\(on)")
+        toggleView.toggle = { [weak self] block in
+            if block {
+                self?.mainThreadBlocker.start()
+            } else {
+                self?.mainThreadBlocker.stop()
+            }
         }
         stackView.addArrangedSubview(toggleView)
     }
@@ -151,7 +161,7 @@ final class MainThreadBlockerToggle: UIStackView {
         label.translatesAutoresizingMaskIntoConstraints = false
         label.font = UIFont.monospacedSystemFont(ofSize: 14, weight: .bold)
         label.textColor = .secondaryLabel
-        label.text = "Block main thread"
+        label.text = "Make main thread busy"
         let toggle = UISwitch(frame: .zero)
         toggle.translatesAutoresizingMaskIntoConstraints = false
         toggle.isOn = false

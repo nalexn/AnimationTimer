@@ -22,11 +22,15 @@ struct Timer { } // Just a namespace
 
 extension Timer {
     struct Tick {
+        let index: Int
+        let startTime: TimeInterval
         let timestamp: TimeInterval
         let frameDiration: TimeInterval
         
         init(last: Tick?) {
+            self.index = last?.index ?? 0
             let timestamp = CACurrentMediaTime()
+            self.startTime = last?.startTime ?? timestamp
             self.timestamp = timestamp
             self.frameDiration = last.flatMap({ timestamp - $0.timestamp }) ?? 0
         }

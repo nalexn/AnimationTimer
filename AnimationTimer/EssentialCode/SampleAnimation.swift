@@ -10,7 +10,6 @@ import UIKit
 final class SampleAnimation<T>: UIView where T: AnimationTimer {
     
     private var timer: T!
-    private var startTime: CFTimeInterval = 0
     private let shapeLayer = CAShapeLayer()
     
     init() {
@@ -24,7 +23,7 @@ final class SampleAnimation<T>: UIView where T: AnimationTimer {
         let size = self.intrinsicContentSize
         timer = T.init(onTimer: { [weak self] tick in
             guard let self = self else { return }
-            let params = tick.shapePath(size: size, startTime: self.startTime)
+            let params = tick.shapePath(size: size)
             self.shapeLayer.path = params.shapePath.cgPath
             gradient.startPoint = params.gradientStart
             gradient.endPoint = params.gradientEnd
@@ -47,7 +46,6 @@ final class SampleAnimation<T>: UIView where T: AnimationTimer {
     }
     
     func startAnimating() {
-        startTime = CACurrentMediaTime()
         timer.start()
     }
     
@@ -78,7 +76,7 @@ private extension Timer.Tick {
         let gradientStart: CGPoint
         let gradientEnd: CGPoint
     }
-    func shapePath(size: CGSize, startTime: CFTimeInterval) -> AnimationParams {
+    func shapePath(size: CGSize) -> AnimationParams {
         let sec: CGFloat = 2 // full revolution in seconds
         let twoPi: CGFloat = 2 * .pi
         let angle = twoPi * CGFloat(timestamp - startTime) / sec
