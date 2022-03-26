@@ -16,7 +16,8 @@ final class ViewController: UIViewController {
         stackView.alignment = .center
         stackView.distribution = .equalSpacing
         stackView.isLayoutMarginsRelativeArrangement = true
-        stackView.layoutMargins = UIEdgeInsets(top: 30, left: 10, bottom: 30, right: 10)
+        stackView.layoutMargins = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
+        stackView.backgroundColor = .systemBackground
         self.view = stackView
     }
     
@@ -25,6 +26,12 @@ final class ViewController: UIViewController {
         guard let stackView = self.view as? UIStackView else { return }
         stackView.addArrangedSubview(AnimationCell(Timer.DisplayLink.self, name: "CADisplayLink"))
         stackView.addArrangedSubview(AnimationCell(Timer.DispatchSourceTimer.self, name: "DispatchSourceTimer"))
+    }
+    
+    override func willTransition(to newCollection: UITraitCollection, with coordinator: UIViewControllerTransitionCoordinator) {
+        super.willTransition(to: newCollection, with: coordinator)
+        guard let stackView = self.view as? UIStackView else { return }
+        stackView.axis = UIDevice.current.orientation.isLandscape ? .horizontal : .vertical
     }
 }
 
@@ -39,8 +46,9 @@ final class AnimationCell: UIStackView {
         let animation = SampleAnimation<T>()
         let title = UILabel()
         title.translatesAutoresizingMaskIntoConstraints = false
-        title.font = UIFont.monospacedSystemFont(ofSize: 30, weight: .light)
+        title.font = UIFont.monospacedSystemFont(ofSize: 14, weight: .light)
         title.textColor = .secondaryLabel
+        title.text = name
         addArrangedSubview(animation)
         addArrangedSubview(title)
         layoutIfNeeded()
