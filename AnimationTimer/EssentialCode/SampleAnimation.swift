@@ -24,8 +24,10 @@ final class SampleAnimation<T>: UIView where T: AnimationTimer {
         let size = self.intrinsicContentSize
         timer = T.init(onTimer: { [weak self] tick in
             guard let self = self else { return }
-            self.shapeLayer.path = tick
-                .shapePath(size: size, startTime: self.startTime).cgPath
+            let params = tick.shapePath(size: size, startTime: self.startTime)
+            self.shapeLayer.path = params.shapePath.cgPath
+            gradient.startPoint = params.gradientStart
+            gradient.endPoint = params.gradientEnd
         })
     }
     
@@ -70,7 +72,13 @@ final class SampleAnimation<T>: UIView where T: AnimationTimer {
 }
 
 private extension Timer.Tick {
-    func shapePath(size: CGSize, startTime: CFTimeInterval) -> UIBezierPath {
+    
+    struct AnimationParams {
+        let shapePath: UIBezierPath
+        let gradientStart: CGPoint
+        let gradientEnd: CGPoint
+    }
+    func shapePath(size: CGSize, startTime: CFTimeInterval) -> AnimationParams {
         let sec: CGFloat = 2 // full revolution in seconds
         let twoPi: CGFloat = 2 * .pi
         let angle = twoPi * CGFloat(timestamp - startTime) / sec
@@ -88,12 +96,15 @@ private extension Timer.Tick {
                            y: size.height * 0.5 + mainRadius * sin($0)) }
             .map { UIBezierPath(arcCenter: $0, radius: circleRadius, startAngle: 0, endAngle: twoPi, clockwise: false) }
             .forEach { path.append($0) }
-        return path
+        let gradientAngle = angle - .pi * 0.5
+        let gradientStart = CGPoint(x: sin(gradientAngle), y: cos(gradientAngle))
+        let gradientEnd = CGPoint(x: sin(gradientAngle + .pi), y: cos(gradientAngle + .pi))
+        return AnimationParams(shapePath: path, gradientStart: gradientStart, gradientEnd: gradientEnd)
     }
     
     private func distribution(progress: CGFloat, count: Int) -> [CGFloat] {
         let _max = progress * 2
-        let step = 1 / CGFloat(count)
+        let step = 1 / CGFloat(count - 1)
         var positions: [CGFloat] = []
         var current = _max
         for _ in 0 ..< count {
