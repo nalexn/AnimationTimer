@@ -15,7 +15,7 @@ protocol AnimationTimer {
     
     var isRunning: Bool { get }
     
-    init(onTimer: @escaping (Timer.Tick) -> Void)
+    init(mainThread: Bool, onTimer: @escaping (Timer.Tick) -> Void)
 }
 
 struct Timer { } // Just a namespace
@@ -42,12 +42,15 @@ extension Timer {
 extension Timer {
     final class NSTimer: AnimationTimer {
         
+        private var thread: Thread?
         private var timer: Foundation.Timer?
-        private var onTimer: (Tick) -> Void
+        private let onTimer: (Tick) -> Void
         private var last: Tick?
+        private let mainThread: Bool
         
-        init(onTimer: @escaping (Tick) -> Void) {
+        init(mainThread: Bool, onTimer: @escaping (Tick) -> Void) {
             self.onTimer = onTimer
+            self.mainThread = mainThread
         }
         
         deinit {
@@ -58,17 +61,30 @@ extension Timer {
             stop()
             let maxFPS = UIScreen.main.maximumFramesPerSecond
             let timeInterval = 1 / TimeInterval(maxFPS)
-            timer = Foundation.Timer(timeInterval: timeInterval, repeats: true) { [weak self] _ in
+            let timer = Foundation.Timer(timeInterval: timeInterval, repeats: true) { [weak self] _ in
                 let tick = Tick(last: self?.last)
                 self?.last = tick
-                self?.onTimer(tick)
+                autoreleasepool {
+                    CATransaction.begin()
+                    self?.onTimer(tick)
+                    CATransaction.commit()
+                }
             }
-            RunLoop.current.add(timer!, forMode: .common)
+            self.timer = timer
+            if mainThread {
+                RunLoop.current.add(timer, forMode: .common)
+            } else {
+                thread = .startedWithRunLoop {
+                    RunLoop.current.add(timer, forMode: .common)
+                }
+            }
         }
         
         func stop() {
             timer?.invalidate()
             timer = nil
+            thread?.cancel()
+            thread = nil
         }
         
         var isRunning: Bool {
@@ -82,19 +98,29 @@ extension Timer {
 extension Timer {
     final class DisplayLink: AnimationTimer {
         
+        private var thread: Thread?
         private let timer: CADisplayLink
         private weak var target: Target?
         
-        init(onTimer: @escaping (Tick) -> Void) {
+        init(mainThread: Bool, onTimer: @escaping (Tick) -> Void) {
             let target = Target(onTimer: onTimer)
             self.target = target
-            timer = CADisplayLink(target: target, selector: #selector(Target.tick(_:)))
+            let timer = CADisplayLink(target: target, selector: #selector(Target.tick(_:)))
+            self.timer = timer
             timer.isPaused = true
-            timer.add(to: .current, forMode: .common)
+            if mainThread {
+                timer.add(to: .current, forMode: .common)
+            } else {
+                thread = .startedWithRunLoop {
+                    timer.add(to: .current, forMode: .common)
+                }
+            }
         }
         
         deinit {
             timer.invalidate()
+            thread?.cancel()
+            thread = nil
         }
         
         func start() {
@@ -122,7 +148,11 @@ extension Timer {
             @objc fileprivate func tick(_ link: CADisplayLink) {
                 let tick = Tick(last: last)
                 self.last = tick
-                onTimer(tick)
+                autoreleasepool {
+                    CATransaction.begin()
+                    onTimer(tick)
+                    CATransaction.commit()
+                }
             }
         }
     }
@@ -133,14 +163,15 @@ extension Timer {
 extension Timer {
     final class DispatchSourceTimer: AnimationTimer {
         
-        private static var queue = DispatchQueue(
-            label: "animation.timer", qos: .userInteractive, autoreleaseFrequency: .workItem)
+        private let queue: DispatchQueue
         private let timer: Dispatch.DispatchSourceTimer
         private(set) var isRunning: Bool = false
         private var last: Tick?
         
-        init(onTimer: @escaping (Tick) -> Void) {
-            timer = DispatchSource.makeTimerSource(flags: [.strict], queue: Self.queue)
+        init(mainThread: Bool, onTimer: @escaping (Tick) -> Void) {
+            queue = mainThread ? .main : DispatchQueue(
+            label: "animation.timer", qos: .userInteractive)
+            timer = DispatchSource.makeTimerSource(flags: [.strict], queue: queue)
             let maxFPS = UIScreen.main.maximumFramesPerSecond
             let timeInterval = 1 / TimeInterval(maxFPS)
             timer.schedule(deadline: .now(), repeating: timeInterval)
@@ -174,5 +205,18 @@ extension Timer {
             isRunning = false
             timer.suspend()
         }
+    }
+}
+
+private extension Thread {
+    static func startedWithRunLoop(_ creation: @escaping () -> Void) -> Thread {
+        let thread = Thread(block: {
+            creation()
+            while true {
+                RunLoop.current.run(until: Date())
+            }
+        })
+        thread.start()
+        return thread
     }
 }

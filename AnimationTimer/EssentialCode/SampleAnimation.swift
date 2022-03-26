@@ -12,7 +12,7 @@ final class SampleAnimation<T>: UIView where T: AnimationTimer {
     private var timer: T!
     private let shapeLayer = CAShapeLayer()
     
-    init() {
+    init(mainThread: Bool) {
         super.init(frame: .zero)
         translatesAutoresizingMaskIntoConstraints = false
         guard let gradient = self.layer as? CAGradientLayer else { fatalError() }
@@ -21,13 +21,13 @@ final class SampleAnimation<T>: UIView where T: AnimationTimer {
         gradient.endPoint = CGPoint(x: 0, y: 1)
         gradient.mask = shapeLayer
         let size = self.intrinsicContentSize
-        timer = T.init(onTimer: { [weak self] tick in
+        timer = T(mainThread: mainThread) { [weak self] tick in
             guard let self = self else { return }
             let params = tick.shapePath(size: size)
             self.shapeLayer.path = params.shapePath.cgPath
             gradient.startPoint = params.gradientStart
             gradient.endPoint = params.gradientEnd
-        })
+        }
     }
     
     required init?(coder: NSCoder) {

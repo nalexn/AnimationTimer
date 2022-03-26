@@ -9,28 +9,37 @@ import UIKit
 
 extension AnimationSampleView {
     enum Sample: CaseIterable {
-        case nsTimer
-        case displayLink
-        case dispatchSourceTimer
+        case nsTimerMain
+        case nsTimerBG
+        case displayLinkMain
+        case displayLinkBG
+        case dispatchSourceTimerMain
+        case dispatchSourceTimerBG
     }
 }
 
 extension AnimationSampleView.Sample {
     func createView() -> UIView {
         switch self {
-        case .nsTimer:
-            return AnimationSampleView(Timer.NSTimer.self, name: "NSTimer")
-        case .displayLink:
-            return AnimationSampleView(Timer.DisplayLink.self, name: "CADisplayLink")
-        case .dispatchSourceTimer:
-            return AnimationSampleView(Timer.DispatchSourceTimer.self, name: "DispatchSourceTimer")
+        case .nsTimerMain:
+            return AnimationSampleView(Timer.NSTimer.self, mainThread: true, name: "NSTimer (Main)")
+        case .nsTimerBG:
+            return AnimationSampleView(Timer.NSTimer.self, mainThread: false, name: "NSTimer (BG)")
+        case .displayLinkMain:
+            return AnimationSampleView(Timer.DisplayLink.self, mainThread: true, name: "CADisplayLink (Main)")
+        case .displayLinkBG:
+            return AnimationSampleView(Timer.DisplayLink.self, mainThread: false, name: "CADisplayLink (BG)")
+        case .dispatchSourceTimerMain:
+            return AnimationSampleView(Timer.DispatchSourceTimer.self, mainThread: true, name: "DispatchSource (Main)")
+        case .dispatchSourceTimerBG:
+            return AnimationSampleView(Timer.DispatchSourceTimer.self, mainThread: false, name: "DispatchSource (BG)")
         }
     }
 }
 
 final class ViewController: UIViewController {
     
-    private let mainThreadBlocker = Timer.NSTimer { tick in
+    private let mainThreadBlocker = Timer.NSTimer(mainThread: true) { tick in
         if tick.index % 500 == 0 {
             usleep(300000)
         }
@@ -76,13 +85,13 @@ final class ViewController: UIViewController {
 
 final class AnimationSampleView: UIStackView {
     
-    init<T>(_ timerType: T.Type, name: String) where T: AnimationTimer {
+    init<T>(_ timerType: T.Type, mainThread: Bool, name: String) where T: AnimationTimer {
         super.init(frame: .zero)
         translatesAutoresizingMaskIntoConstraints = false
         axis = .vertical
         alignment = .center
         distribution = .fill
-        let animation = SampleAnimation<T>()
+        let animation = SampleAnimation<T>(mainThread: mainThread)
         let title = UILabel()
         title.translatesAutoresizingMaskIntoConstraints = false
         title.font = UIFont.monospacedSystemFont(ofSize: 14, weight: .light)
