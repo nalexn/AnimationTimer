@@ -13,6 +13,8 @@ protocol AnimationTimer {
     func start()
     func stop()
     
+    var isRunning: Bool { get }
+    
     init(onTimer: @escaping (Timer.Tick) -> Void)
 }
 
@@ -27,6 +29,46 @@ extension Timer {
             let timestamp = CACurrentMediaTime()
             self.timestamp = timestamp
             self.frameDiration = last.flatMap({ timestamp - $0.timestamp }) ?? 0
+        }
+    }
+}
+
+// MARK: - NSTimer
+
+extension Timer {
+    final class NSTimer: AnimationTimer {
+        
+        private var timer: Foundation.Timer?
+        private var onTimer: (Tick) -> Void
+        private var last: Tick?
+        
+        init(onTimer: @escaping (Tick) -> Void) {
+            self.onTimer = onTimer
+        }
+        
+        deinit {
+            stop()
+        }
+        
+        func start() {
+            stop()
+            let maxFPS = UIScreen.main.maximumFramesPerSecond
+            let timeInterval = 1 / TimeInterval(maxFPS)
+            timer = Foundation.Timer(timeInterval: timeInterval, repeats: true) { [weak self] _ in
+                let tick = Tick(last: self?.last)
+                self?.last = tick
+                self?.onTimer(tick)
+            }
+            RunLoop.current.add(timer!, forMode: .common)
+        }
+        
+        func stop() {
+            timer?.invalidate()
+            timer = nil
+        }
+        
+        var isRunning: Bool {
+            return timer != nil
         }
     }
 }

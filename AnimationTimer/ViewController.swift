@@ -24,6 +24,7 @@ final class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         guard let stackView = self.view as? UIStackView else { return }
+        stackView.addArrangedSubview(AnimationCell(Timer.NSTimer.self, name: "NSTimer"))
         stackView.addArrangedSubview(AnimationCell(Timer.DisplayLink.self, name: "CADisplayLink"))
         stackView.addArrangedSubview(AnimationCell(Timer.DispatchSourceTimer.self, name: "DispatchSourceTimer"))
     }
