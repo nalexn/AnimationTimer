@@ -1,5 +1,5 @@
 //
-//  SampleAnimation.swift
+//  AnimationView.swift
 //  AnimationTimer
 //
 //  Created by Alexey on 26.03.2022.
@@ -7,7 +7,7 @@
 
 import UIKit
 
-final class SampleAnimation<T>: UIView where T: AnimationTimer {
+final class AnimationView<T>: UIView where T: AnimationTimer {
     
     private var timer: T!
     private let shapeLayer = CAShapeLayer()
@@ -17,13 +17,11 @@ final class SampleAnimation<T>: UIView where T: AnimationTimer {
         translatesAutoresizingMaskIntoConstraints = false
         guard let gradient = self.layer as? CAGradientLayer else { fatalError() }
         gradient.colors = [UIColor.red.cgColor, UIColor.blue.cgColor]
-        gradient.startPoint = CGPoint(x: 1, y: 0)
-        gradient.endPoint = CGPoint(x: 0, y: 1)
         gradient.mask = shapeLayer
         let size = self.intrinsicContentSize
         timer = T(mainThread: mainThread) { [weak self] tick in
             guard let self = self else { return }
-            let params = tick.shapePath(size: size)
+            let params = tick.animationParams(size: size)
             self.shapeLayer.path = params.shapePath.cgPath
             gradient.startPoint = params.gradientStart
             gradient.endPoint = params.gradientEnd
@@ -54,8 +52,12 @@ final class SampleAnimation<T>: UIView where T: AnimationTimer {
     }
     
     override func layoutSublayers(of layer: CALayer) {
-        syncMain {
+        if Thread.isMainThread {
             super.layoutSublayers(of: layer)
+        } else {
+            DispatchQueue.main.sync {
+                super.layoutSublayers(of: layer)
+            }
         }
     }
     
@@ -76,7 +78,8 @@ private extension Timer.Tick {
         let gradientStart: CGPoint
         let gradientEnd: CGPoint
     }
-    func shapePath(size: CGSize) -> AnimationParams {
+    
+    func animationParams(size: CGSize) -> AnimationParams {
         let sec: CGFloat = 2 // full revolution in seconds
         let twoPi: CGFloat = 2 * .pi
         let angle = twoPi * CGFloat(timestamp - startTime) / sec
@@ -110,21 +113,5 @@ private extension Timer.Tick {
             current -= step
         }
         return positions
-    }
-}
-
-private extension CGSize {
-    func point(angle: CGFloat) -> CGPoint {
-        let x: CGFloat = (1 + cos(angle)) / 2
-        let y: CGFloat = (1 + sin(angle)) / 2
-        return CGPoint(x: x * width, y: y * height)
-    }
-}
-
-func syncMain<T>(_ closure: () -> T) -> T {
-    if Thread.isMainThread {
-        return closure()
-    } else {
-        return DispatchQueue.main.sync(execute: closure)
     }
 }

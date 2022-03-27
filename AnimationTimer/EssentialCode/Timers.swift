@@ -169,8 +169,7 @@ extension Timer {
         private var last: Tick?
         
         init(mainThread: Bool, onTimer: @escaping (Tick) -> Void) {
-            queue = mainThread ? .main : DispatchQueue(
-            label: "animation.timer", qos: .userInteractive)
+            queue = mainThread ? .main : DispatchQueue(label: "animation.timer", qos: .userInteractive)
             timer = DispatchSource.makeTimerSource(flags: [.strict], queue: queue)
             let maxFPS = UIScreen.main.maximumFramesPerSecond
             let timeInterval = 1 / TimeInterval(maxFPS)
