@@ -2,7 +2,7 @@
 //  AnimationSampleCell.swift
 //  AnimationTimer
 //
-//  Created by Alexey on 27.03.2022.
+//  Copyright © 2022 Alexey Naumov. MIT License
 //
 
 import UIKit

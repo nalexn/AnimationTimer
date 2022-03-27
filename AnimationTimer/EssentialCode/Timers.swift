@@ -2,7 +2,7 @@
 //  TimerProtocol.swift
 //  Timers
 //
-//  Created by Alexey on 26.03.2022.
+//  Copyright © 2022 Alexey Naumov. MIT License
 //
 
 import QuartzCore
