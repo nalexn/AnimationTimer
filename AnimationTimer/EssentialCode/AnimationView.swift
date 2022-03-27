@@ -13,6 +13,7 @@ private extension Timer.Tick.AnimationParams {
         static var circleRadiusProportion: CGFloat { 0.07 }
         static var numberOfCircles: Int { 12 }
         static var gradient: [UIColor] { [.red, .blue] }
+        static var timingFunction: TimingFunction { .sinusoid }
     }
 }
 
@@ -105,7 +106,7 @@ private extension Timer.Tick.AnimationParams {
         let revRadius = min(size.width, size.height) * 0.5 - circleRadius
         let path = UIBezierPath()
         
-        Self.distribution(progress: revProgress, count: Constants.numberOfCircles)
+        Self.distribution(progress: revProgress)
             .map { $0 * twoPi - 0.5 * .pi }
             .map { CGPoint(x: size.width * 0.5 + revRadius * cos($0),
                            y: size.height * 0.5 + revRadius * sin($0)) }
@@ -117,15 +118,35 @@ private extension Timer.Tick.AnimationParams {
         self.init(shapePath: path, gradientStart: gradientStart, gradientEnd: gradientEnd)
     }
     
-    private static func distribution(progress: CGFloat, count: Int) -> [CGFloat] {
-        let _max = progress * 2
-        let step = 1 / CGFloat(count - 1)
+    private static func distribution(progress: CGFloat) -> [CGFloat] {
+        let count = Constants.numberOfCircles
+        let step = 1 / CGFloat(count)
         var positions: [CGFloat] = []
-        var current = _max
+        var current = Constants.timingFunction.apply(to: progress)
         for _ in 0 ..< count {
             positions.append(max(0, min(1, current)))
             current -= step
         }
         return positions
+    }
+}
+
+private extension Timer.Tick.AnimationParams {
+    enum TimingFunction {
+        case linear
+        case sinusoid
+        
+        /**
+         `progress` range is [0, 1]. The output range should be [0, 2]
+         */
+        func apply(to progress: CGFloat) -> CGFloat {
+            switch self {
+            case .linear:
+                return 2 * progress
+            case .sinusoid:
+                let val = sin(progress * .pi)
+                return progress < 0.5 ? val : 2 - val
+            }
+        }
     }
 }
