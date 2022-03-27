@@ -37,7 +37,7 @@ final class ViewController: UIViewController {
         
         let mainThreadBlocker = Timer.NSTimer(mainThread: true) { tick in
             if tick.index % 10 == 0 {
-                usleep(150000)
+                usleep(300000)
             }
         }
         
