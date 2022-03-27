@@ -39,12 +39,6 @@ extension AnimationSampleView.Sample {
 
 final class ViewController: UIViewController {
     
-    private let mainThreadBlocker = Timer.NSTimer(mainThread: true) { tick in
-        if tick.index % 500 == 0 {
-            usleep(300000)
-        }
-    }
-    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -71,12 +65,18 @@ final class ViewController: UIViewController {
         view.addSubview(stackView)
         stackView.bindEdgesToSuperView()
         
+        let mainThreadBlocker = Timer.NSTimer(mainThread: true) { tick in
+            if tick.index % 10 == 0 {
+                usleep(150000)
+            }
+        }
+        
         let toggleView = MainThreadBlockerToggle(frame: .zero)
-        toggleView.toggle = { [weak self] block in
+        toggleView.toggle = { block in
             if block {
-                self?.mainThreadBlocker.start()
+                mainThreadBlocker.start()
             } else {
-                self?.mainThreadBlocker.stop()
+                mainThreadBlocker.stop()
             }
         }
         stackView.addArrangedSubview(toggleView)

@@ -28,7 +28,7 @@ extension Timer {
         let frameDiration: TimeInterval
         
         init(last: Tick?) {
-            self.index = last?.index ?? 0
+            self.index = last.flatMap({ $0.index + 1 }) ?? 0
             let timestamp = CACurrentMediaTime()
             self.startTime = last?.startTime ?? timestamp
             self.timestamp = timestamp
