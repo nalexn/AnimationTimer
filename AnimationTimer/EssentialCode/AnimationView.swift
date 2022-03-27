@@ -122,7 +122,7 @@ private extension Timer.Tick.AnimationParams {
         let count = Constants.numberOfCircles
         let step = 1 / CGFloat(count)
         var positions: [CGFloat] = []
-        var current = Constants.timingFunction.apply(to: progress)
+        var current = 2 * Constants.timingFunction.apply(to: progress)
         for _ in 0 ..< count {
             positions.append(max(0, min(1, current)))
             current -= step
@@ -137,15 +137,15 @@ private extension Timer.Tick.AnimationParams {
         case sinusoid
         
         /**
-         `progress` range is [0, 1]. The output range should be [0, 2]
+         `progress` range is [0, 1]. The output range should also be [0, 1]
          */
         func apply(to progress: CGFloat) -> CGFloat {
             switch self {
             case .linear:
-                return 2 * progress
+                return progress
             case .sinusoid:
-                let val = sin(progress * .pi)
-                return progress < 0.5 ? val : 2 - val
+                let val = 0.5 * sin(progress * .pi)
+                return progress < 0.5 ? val : 1 - val
             }
         }
     }
